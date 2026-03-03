@@ -15,9 +15,9 @@ jobs:
         os: [ ubuntu-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.6'
+          go-version-file: go.mod
           cache: true
       
       # Install Fyne dependencies on Linux
@@ -41,9 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.6'
+          go-version-file: go.mod
           cache: true
       
       # Install Fyne dependencies for vet/build
@@ -59,9 +59,10 @@ jobs:
             libxxf86vm-dev \
             xorg-dev
       
-      - run: go fmt -l . | grep . && exit 1 || true
+      - name: Check formatting
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
       - run: go vet ./...
-      - uses: golangci/golangci-lint-action@v3
+      - uses: golangci/golangci-lint-action@v6
         with:
           version: latest
           args: --timeout=5m
