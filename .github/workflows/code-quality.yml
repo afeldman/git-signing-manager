@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: '0 2 * * *'
 
+permissions:
+  security-events: write
+  contents: read
+
 jobs:
   security:
     name: Security Scan
