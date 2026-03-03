@@ -82,26 +82,14 @@ jobs:
           go-version-file: go.mod
           cache: true
       
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgl1-mesa-dev \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxi-dev \
-            libxxf86vm-dev \
-            xorg-dev
-      
       - name: GoReleaser Check
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: check
+          args: check --config .goreleaser-cli.yaml
       
       - name: GoReleaser Build (snapshot)
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: build --snapshot --clean --single-target
+          args: build --snapshot --clean --single-target --config .goreleaser-cli.yaml

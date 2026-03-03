@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Release
+  release-cli:
+    name: Release CLI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,22 +22,31 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgl1-mesa-dev \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxi-dev \
-            libxxf86vm-dev \
-            xorg-dev
-
-      - name: Run GoReleaser
+      - name: Run GoReleaser (CLI only)
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: release --clean
+          args: release --clean --config .goreleaser-cli.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-gui:
+    name: Release GUI (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run GoReleaser (GUI only)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: release --clean --config .goreleaser-gui.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
