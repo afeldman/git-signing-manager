@@ -39,9 +39,30 @@ type TestResult struct {
 	SignatureInfo    *SignatureInfo
 }
 
-// Profile represents a GPG signing profile
+// ProfileType indicates the type of signing key
+type ProfileType int
+
+const (
+	GPGProfile ProfileType = iota
+	SSHProfile
+)
+
+// String returns a human-readable string for ProfileType
+func (pt ProfileType) String() string {
+	switch pt {
+	case GPGProfile:
+		return "GPG"
+	case SSHProfile:
+		return "SSH"
+	default:
+		return "Unknown"
+	}
+}
+
+// Profile represents a signing profile (GPG or SSH)
 type Profile struct {
 	Name  string
 	Email string
 	Key   string
+	Type  ProfileType // GPG or SSH
 }

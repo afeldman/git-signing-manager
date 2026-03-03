@@ -136,8 +136,8 @@ func isRepositoryDirty() (bool, error) {
 // detectSigningMethod detects whether GPG or SSH signing is active
 func detectSigningMethod() (model.SigningMethod, error) {
 	// Check commit.gpgsign and gpg.format
-	localFormat, _ := getGitConfig("gpg.format")
-	globalFormat, _ := getGitConfig("--global", "gpg.format")
+	localFormat, _ := readGitConfigValue("--local", "gpg.format")
+	globalFormat, _ := readGitConfigValue("--global", "gpg.format")
 
 	if strings.TrimSpace(localFormat) == "ssh" || strings.TrimSpace(globalFormat) == "ssh" {
 		return model.SSHSigning, nil
@@ -149,17 +149,6 @@ func detectSigningMethod() (model.SigningMethod, error) {
 
 	// Default to GPG if not specified
 	return model.GPGSigning, nil
-}
-
-// getGitConfig retrieves a git config value
-func getGitConfig(args ...string) (string, error) {
-	fullArgs := append([]string{"config"}, args...)
-	cmd := exec.Command("git", fullArgs...)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
 }
 
 // getCurrentHead returns the current HEAD commit hash

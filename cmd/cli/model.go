@@ -9,6 +9,7 @@ import (
 	"github.com/afeldman/git-signing-manager/internal/gitcfg"
 	"github.com/afeldman/git-signing-manager/internal/gpg"
 	"github.com/afeldman/git-signing-manager/internal/model"
+	"github.com/afeldman/git-signing-manager/internal/ssh"
 )
 
 type cliModel struct {
@@ -21,13 +22,50 @@ type cliModel struct {
 	showingTestResult bool
 }
 
+// loadAllProfiles loads both GPG and SSH profiles
+func loadAllProfiles() ([]model.Profile, []string) {
+	var allProfiles []model.Profile
+	var warnings []string
+
+	// Load GPG profiles
+	gpgProfiles, err := gpg.GetProfiles()
+	if err != nil {
+		warnings = append(warnings, fmt.Sprintf("GPG: %v", err))
+	}
+	for i := range gpgProfiles {
+		gpgProfiles[i].Type = model.GPGProfile
+	}
+	allProfiles = append(allProfiles, gpgProfiles...)
+
+	// Load SSH profiles
+	sshProfiles, err := ssh.GetProfiles()
+	if err != nil {
+		warnings = append(warnings, fmt.Sprintf("SSH: %v", err))
+	}
+	for i := range sshProfiles {
+		sshProfiles[i].Type = model.SSHProfile
+	}
+	allProfiles = append(allProfiles, sshProfiles...)
+
+	return allProfiles, warnings
+}
+
 func initialModel() cliModel {
-	profiles, _ := gpg.GetProfiles()
-	return cliModel{
+	profiles, warnings := loadAllProfiles()
+	m := cliModel{
 		profiles: profiles,
 		cursor:   0,
 		testMode: model.EphemeralCommit,
 	}
+	if len(warnings) > 0 {
+		m.statusMessage = fmt.Sprintf("Warnings: %s", strings.Join(warnings, "; "))
+		m.statusColor = "yellow"
+	}
+	if len(profiles) == 0 {
+		m.statusMessage = "No signing keys found. Please create a GPG or SSH key first."
+		m.statusColor = "yellow"
+	}
+	return m
 }
 
 func (m cliModel) Init() tea.Cmd {
@@ -92,6 +130,16 @@ func (m cliModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "enter":
+			if len(m.profiles) == 0 {
+				m.statusMessage = "No profiles available"
+				m.statusColor = "yellow"
+				return m, nil
+			}
+			if m.cursor < 0 || m.cursor >= len(m.profiles) {
+				m.statusMessage = "Invalid selection"
+				m.statusColor = "red"
+				return m, nil
+			}
 			p := m.profiles[m.cursor]
 			err := gitcfg.ApplyProfile(p, false)
 			if err != nil {
@@ -107,6 +155,29 @@ func (m cliModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Clear test result view
 			m.showingTestResult = false
 			m.testResult = nil
+
+		case "g":
+			// Apply globally
+			if len(m.profiles) == 0 {
+				m.statusMessage = "No profiles available"
+				m.statusColor = "yellow"
+				return m, nil
+			}
+			if m.cursor < 0 || m.cursor >= len(m.profiles) {
+				m.statusMessage = "Invalid selection"
+				m.statusColor = "red"
+				return m, nil
+			}
+			p := m.profiles[m.cursor]
+			err := gitcfg.ApplyProfile(p, true)
+			if err != nil {
+				m.statusMessage = fmt.Sprintf("Error applying profile globally: %v", err)
+				m.statusColor = "red"
+			} else {
+				m.statusMessage = fmt.Sprintf("Profile applied globally: %s <%s>", p.Name, p.Email)
+				m.statusColor = "green"
+			}
+			m.showingTestResult = false
 
 		case "m":
 			// Toggle test mode
@@ -144,7 +215,8 @@ func (m cliModel) renderMainView() tea.View {
 		if m.cursor == i {
 			cursor = ">"
 		}
-		s.WriteString(fmt.Sprintf("%s %s <%s>\n", cursor, p.Name, p.Email))
+		typeStr := p.Type.String()
+		s.WriteString(fmt.Sprintf("%s [%s] %s <%s>\n", cursor, typeStr, p.Name, p.Email))
 	}
 
 	s.WriteString("\n")
@@ -157,7 +229,8 @@ func (m cliModel) renderMainView() tea.View {
 
 	s.WriteString("Commands:\n")
 	s.WriteString("  ↑/↓     navigate profiles\n")
-	s.WriteString("  enter   apply selected profile\n")
+	s.WriteString("  enter   apply selected profile (local)\n")
+	s.WriteString("  g       apply selected profile (global)\n")
 	s.WriteString("  t       test signing (ephemeral)\n")
 	s.WriteString("  T       test signing (keep commit)\n")
 	s.WriteString("  m       toggle test mode\n")

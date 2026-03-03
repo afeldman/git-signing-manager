@@ -12,17 +12,54 @@ import (
 	"github.com/afeldman/git-signing-manager/internal/gitcfg"
 	"github.com/afeldman/git-signing-manager/internal/gpg"
 	"github.com/afeldman/git-signing-manager/internal/model"
+	"github.com/afeldman/git-signing-manager/internal/ssh"
 )
+
+// loadAllProfiles loads both GPG and SSH profiles
+func loadAllProfiles() ([]model.Profile, error) {
+	var allProfiles []model.Profile
+	var lastErr error
+
+	// Load GPG profiles
+	gpgProfiles, err := gpg.GetProfiles()
+	if err != nil {
+		lastErr = fmt.Errorf("GPG: %w", err)
+	}
+	for i := range gpgProfiles {
+		gpgProfiles[i].Type = model.GPGProfile
+	}
+	allProfiles = append(allProfiles, gpgProfiles...)
+
+	// Load SSH profiles
+	sshProfiles, err := ssh.GetProfiles()
+	if err != nil {
+		if lastErr != nil {
+			lastErr = fmt.Errorf("%v; SSH: %w", lastErr, err)
+		} else {
+			lastErr = fmt.Errorf("SSH: %w", err)
+		}
+	}
+	for i := range sshProfiles {
+		sshProfiles[i].Type = model.SSHProfile
+	}
+	allProfiles = append(allProfiles, sshProfiles...)
+
+	return allProfiles, lastErr
+}
 
 func main() {
 	a := app.New()
 	w := a.NewWindow("Git Signing Manager")
 
-	profiles, _ := gpg.GetProfiles()
+	profiles, err := loadAllProfiles()
+	if err != nil {
+		// Show warning but continue - we may have some profiles
+		dialog.ShowInformation("Warning", fmt.Sprintf("Some profiles could not be loaded: %v", err), w)
+	}
 
 	options := []string{}
 	for _, p := range profiles {
-		options = append(options, fmt.Sprintf("%s <%s>", p.Name, p.Email))
+		options = append(options, fmt.Sprintf("[%s] %s <%s>", p.Type.String(), p.Name, p.Email))
 	}
 
 	// Profile selection
@@ -31,10 +68,15 @@ func main() {
 
 	applyBtn := widget.NewButton("Apply Profile", func() {
 		idx := selectBox.SelectedIndex()
-		if idx >= 0 {
-			gitcfg.ApplyProfile(profiles[idx], globalCheck.Checked)
-			dialog.ShowInformation("Success", fmt.Sprintf("Applied profile: %s", options[idx]), w)
+		if idx < 0 || idx >= len(profiles) {
+			dialog.ShowError(fmt.Errorf("please select a profile first"), w)
+			return
 		}
+		if err := gitcfg.ApplyProfile(profiles[idx], globalCheck.Checked); err != nil {
+			dialog.ShowError(fmt.Errorf("failed to apply profile: %w", err), w)
+			return
+		}
+		dialog.ShowInformation("Success", fmt.Sprintf("Applied profile: %s", options[idx]), w)
 	})
 
 	// Test mode selection
