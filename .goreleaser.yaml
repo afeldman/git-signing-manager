@@ -1,0 +1,83 @@
+version: 2
+
+project_name: git-signing-manager
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  # --------------------
+  # CLI (static)
+  # --------------------
+  - id: cli
+    main: ./cmd/cli
+    binary: gsm
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+
+  # --------------------
+  # GUI (native only)
+  # --------------------
+  - id: gui
+    main: ./cmd/gui
+    binary: gsm-gui
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+
+# --------------------
+# Archives
+# --------------------
+archives:
+  - id: cli-archives
+    ids:
+      - cli
+    formats: 
+      - tar.gz
+    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+  - id: gui-archives
+    ids:
+      - gui
+    formats: 
+      - tar.gz
+    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  draft: false
+  prerelease: auto
+  footer: |
+    ---
+    Built with ❤️ using GoReleaser
