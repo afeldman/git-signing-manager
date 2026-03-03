@@ -7,32 +7,6 @@ on:
     branches: [ master, main, develop ]
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-      
-      # Install Fyne dependencies
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgl1-mesa-dev \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxi-dev \
-            libxxf86vm-dev \
-            xorg-dev
-      
-      - name: Run tests
-        run: go test -v -race ./...
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -68,8 +42,35 @@ jobs:
           install-mode: goinstall
           args: --timeout=5m
 
+  test:
+    name: Test
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxxf86vm-dev \
+            xorg-dev
+      
+      - name: Run tests
+        run: go test -v -race ./...
+
   build-check:
     name: Build Check (GoReleaser)
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
