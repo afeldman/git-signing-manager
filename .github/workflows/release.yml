@@ -9,7 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  release:
+    name: Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +22,6 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # Install Fyne dependencies for GUI build
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
@@ -34,7 +34,8 @@ jobs:
             libxxf86vm-dev \
             xorg-dev
 
-      - uses: goreleaser/goreleaser-action@v6
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
           args: release --clean

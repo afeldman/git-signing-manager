@@ -9,10 +9,7 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest ]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -20,9 +17,8 @@ jobs:
           go-version-file: go.mod
           cache: true
       
-      # Install Fyne dependencies on Linux
+      # Install Fyne dependencies
       - name: Install Linux dependencies
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -34,7 +30,8 @@ jobs:
             libxxf86vm-dev \
             xorg-dev
       
-      - run: go test -v -race ./...
+      - name: Run tests
+        run: go test -v -race ./...
 
   lint:
     name: Lint
@@ -46,7 +43,6 @@ jobs:
           go-version-file: go.mod
           cache: true
       
-      # Install Fyne dependencies for vet/build
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
@@ -61,9 +57,50 @@ jobs:
       
       - name: Check formatting
         run: test -z "$(gofmt -l . | tee /dev/stderr)"
-      - run: go vet ./...
-      - uses: golangci/golangci-lint-action@v6
+      
+      - name: Vet
+        run: go vet ./...
+      
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
         with:
           version: v1.64.8
           install-mode: goinstall
           args: --timeout=5m
+
+  build-check:
+    name: Build Check (GoReleaser)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxxf86vm-dev \
+            xorg-dev
+      
+      - name: GoReleaser Check
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: check
+      
+      - name: GoReleaser Build (snapshot)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: build --snapshot --clean --single-target
