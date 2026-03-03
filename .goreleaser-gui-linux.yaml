@@ -35,7 +35,7 @@ checksum:
   name_template: "checksums-gui-linux.txt"
 
 changelog:
-  skip: true
+  disable: true
 
 release:
   draft: false
