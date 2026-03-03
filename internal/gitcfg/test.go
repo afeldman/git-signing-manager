@@ -13,18 +13,13 @@ import (
 
 // TestSigning performs a test signing operation with the specified mode
 func TestSigning(mode model.TestMode) (*model.TestResult, error) {
-	// Check if repository is dirty
-	isDirty, err := isRepositoryDirty()
+	// Check if repository is dirty (we continue regardless but could warn user)
+	_, err := isRepositoryDirty()
 	if err != nil {
 		return &model.TestResult{
 			Success: false,
 			Error:   fmt.Errorf("failed to check repository status: %w", err),
 		}, err
-	}
-
-	if isDirty {
-		// For now, we proceed but mark it in the result
-		// In production, you might want to ask for confirmation first
 	}
 
 	// Detect signing method

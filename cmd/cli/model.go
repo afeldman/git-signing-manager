@@ -151,7 +151,7 @@ func (m cliModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.showingTestResult = false
 
-		case "escape":
+		case "esc", "escape":
 			// Clear test result view
 			m.showingTestResult = false
 			m.testResult = nil

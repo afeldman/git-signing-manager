@@ -47,7 +47,7 @@ func TestApplyProfile_Validation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -58,8 +58,10 @@ func TestApplyProfile_Validation(t *testing.T) {
 
 	// Change to temp directory for tests
 	oldDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldDir)
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change to temp dir: %v", err)
+	}
+	defer func() { _ = os.Chdir(oldDir) }()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -77,10 +79,12 @@ func TestIsInsideGitRepo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	oldDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change to temp dir: %v", err)
+	}
 
 	if IsInsideGitRepo() {
 		t.Error("IsInsideGitRepo() returned true for non-git directory")
@@ -97,7 +101,7 @@ func TestIsInsideGitRepo(t *testing.T) {
 		t.Error("IsInsideGitRepo() returned false for git directory")
 	}
 
-	os.Chdir(oldDir)
+	_ = os.Chdir(oldDir)
 }
 
 func TestRunGitConfig(t *testing.T) {
@@ -106,7 +110,7 @@ func TestRunGitConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -116,8 +120,10 @@ func TestRunGitConfig(t *testing.T) {
 	}
 
 	oldDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldDir)
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change to temp dir: %v", err)
+	}
+	defer func() { _ = os.Chdir(oldDir) }()
 
 	// Test setting a config value
 	err = runGitConfig("--local", "test.key", "test-value")
@@ -182,7 +188,7 @@ func TestIsRepositoryDirty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -192,8 +198,10 @@ func TestIsRepositoryDirty(t *testing.T) {
 	}
 
 	oldDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldDir)
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change to temp dir: %v", err)
+	}
+	defer func() { _ = os.Chdir(oldDir) }()
 
 	// Clean repo should not be dirty
 	dirty, err := isRepositoryDirty()

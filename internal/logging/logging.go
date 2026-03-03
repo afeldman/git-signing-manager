@@ -158,7 +158,7 @@ func (l *Logger) log(level Level, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	logLine := fmt.Sprintf("%s [%s] %s%s\n", timestamp, level, prefix, msg)
 
-	l.output.Write([]byte(logLine))
+	_, _ = l.output.Write([]byte(logLine))
 }
 
 // Debug logs a debug message
