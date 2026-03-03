@@ -19,6 +19,21 @@ jobs:
         with:
           go-version: '1.25.6'
           cache: true
+      
+      # Install Fyne dependencies on Linux
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxxf86vm-dev \
+            xorg-dev
+      
       - run: go test -v -race ./...
 
   lint:
@@ -30,6 +45,20 @@ jobs:
         with:
           go-version: '1.25.6'
           cache: true
+      
+      # Install Fyne dependencies for vet/build
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxxf86vm-dev \
+            xorg-dev
+      
       - run: go fmt -l . | grep . && exit 1 || true
       - run: go vet ./...
       - uses: golangci/golangci-lint-action@v3
